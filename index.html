@@ -9,6 +9,7 @@
     .voll { background-color: #f8d7da; }
     .frei { background-color: #d4edda; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
+    .klein { font-size: 0.9em; color: #555; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -17,27 +18,36 @@
 
   <script>
     const maxTermineProStunde = 2;
-    const slots = {
-      "09:00": [],
-      "10:00": [],
-      "11:00": [],
-      "12:00": []
-    };
+    const slotZeiten = ["09:00", "10:00", "11:00", "12:00"];
+
+    // Lade gespeicherte Daten oder leere Struktur
+    let slots = JSON.parse(localStorage.getItem("friseur_termine")) || {};
+    slotZeiten.forEach(zeit => {
+      if (!slots[zeit]) slots[zeit] = [];
+    });
+
+    function speichern() {
+      localStorage.setItem("friseur_termine", JSON.stringify(slots));
+    }
 
     function aktualisiereAnsicht() {
       const slotsDiv = document.getElementById("slots");
       slotsDiv.innerHTML = "";
 
-      for (const zeit in slots) {
-        const termine = slots[zeit].length;
-        const verbleibend = maxTermineProStunde - termine;
+      for (const zeit of slotZeiten) {
+        const termine = slots[zeit];
+        const verbleibend = maxTermineProStunde - termine.length;
         const voll = verbleibend === 0;
         const div = document.createElement("div");
         div.className = "slot " + (voll ? "voll" : "frei");
+
         div.innerHTML = `
           <strong>${zeit}</strong><br>
           Verbleibende Termine: ${verbleibend}<br>
           <button ${voll ? "disabled" : ""} onclick="terminBuchen('${zeit}')">Termin buchen</button>
+          <div class="klein">
+            ${termine.map((n, i) => `• ${n}`).join("<br>")}
+          </div>
         `;
         slotsDiv.appendChild(div);
       }
@@ -46,8 +56,9 @@
     function terminBuchen(zeit) {
       if (slots[zeit].length < maxTermineProStunde) {
         const name = prompt("Bitte deinen Namen eingeben:");
-        if (name) {
-          slots[zeit].push(name);
+        if (name && name.trim() !== "") {
+          slots[zeit].push(name.trim());
+          speichern();
           aktualisiereAnsicht();
         }
       }
